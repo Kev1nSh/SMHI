@@ -1,6 +1,12 @@
 import requests
 import json
 import time
+import RPi.GPIO as GPIO
+
+LED_PIN = 18 # Sätt rätt pin nummer här
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(LED_PIN, GPIO.OUT)
+
 
 
 API_URL = "https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/18.063240/lat/59.334591/data.json"  
@@ -79,23 +85,36 @@ def filter_data(data):
     desired_wysmb2_rain = {15, 16, 17, 25, 26, 27}
     desired_pcat_rain = {2, 3}
     
+    is_raining = False
+
     for time_series in data.get('timeSeries', []):
         for parameter in time_series.get('parameters', []):
             print(f"CHecking parameter {parameter}")
+            #Printar ut alla parametrar för att se vad som finns, 
+            #lär behövas tar bort senare eftersom för mycket data att printa med det rikitga datan 
             if parameter.get('name') == 'pcat' and parameter['values'][0] in desired_pcat_rain:
                 print('Det kommer att regna')
-                return True
+                is_raining = True
             elif parameter.get('name') == 'Wsymb2' and parameter['values'][0] in desired_wysmb2_rain:
-                print('Det kommer att regna')
-                return True
+                is_raining = True
+        if is_raining:
+            return True
     return False
+
+def control_led(is_raining):
+    if is_raining:
+        GPIO.output(LED_PIN, GPIO.HIGH)
+    else:
+        GPIO.output(LED_PIN, GPIO.LOW)
 
 def send_command(command):
     if command == 'Det kommer att regna':
         print("PWR ON")
     
-    else :
+    elif command == 'Det kommer inte att regna':
+        print("Det kommer inte att regna på de närmaste 10 dagarna")
         print("STBY")
+        
     
 def main():
     try: 
@@ -105,12 +124,14 @@ def main():
                 send_command('Det kommer att regna')
         
             else:
-                print('Det kommer inte att regna')
+                send_command('Det kommer inte att regna')
             time.sleep(3600)
     
     except KeyboardInterrupt:
-        print('Avslutar programmet')
-        exit(0)
+        GPIO.cleanup()
+        #print('Avslutar programmet')
+        #exit(0)
+    
     
 if __name__ == '__main__':
     main()

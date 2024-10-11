@@ -114,7 +114,6 @@ if __name__ == '__main__':
 
 
 
-
 #pcat precipitation category (1=none, 2=snow, 3=snow and rain, 4=rain, 5=drizzle, 6=freezing rain, 7=freezing drizzle)
 #wsymb2 är olika väder symboler
 #wsymb2 symboler som vi bryrr oss är:
