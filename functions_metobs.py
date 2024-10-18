@@ -47,7 +47,7 @@ def citiesFromCoords(lon, lat):
 
 
 def print_station_info(station_id, time_period):
-    url = f"{base_url}/version/1.0/parameter/1/station/{station_id}/period/{time_period}.json"
+    url = f"{base_url_metobs}/version/1.0/parameter/1/station/{station_id}/period/{time_period}.json"
     response = requests.get(url)
     if response.status_code == 200:
         data = response.json()

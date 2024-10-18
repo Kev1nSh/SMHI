@@ -106,8 +106,9 @@ if __name__ == '__main__':
 
 
 
-
-
+# 13 Rådande väder
+# 17 Nederbörd 2 gånger per dygn, 06 och 18
+# 27 Lufttemperatur 2 gånger per dygn, 06 och 18
 
 
 

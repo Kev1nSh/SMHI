@@ -1,4 +1,5 @@
 import requests
+import functions_forecast
 from datetime import datetime
 from tabulate import tabulate
 
@@ -88,7 +89,7 @@ if __name__ == "__main__":
         longitude, latitude = coord_input_loop()
 
         data = get_nearest_available_point_data(longitude, latitude)
-        citiesFromCoords(latitude, longitude)
+        functions_forecast.citiesFromCoords(latitude, longitude)
 
 
   
