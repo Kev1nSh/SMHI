@@ -50,13 +50,19 @@ def fetch_cities():
         'maxRows' : 1000,
         'username' : username
     } """
+
     geoname_url = "http://api.geonames.org/searchJSON?q=&country=SE&featureClass=P&maxRows=1000&username=kevin125sh"
     response = requests.get(geoname_url)
-    response.raise_for_status()
-
+   
     data = response.json()
     
-    print(data)
+    for elememt in data['geonames']:
+        city_name = elememt.get('name')
+        cities.append({'name':city_name})
+    
+    print(cities)
+    return cities
+       
 
 
     """ 
