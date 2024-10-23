@@ -1,9 +1,6 @@
 import requests
 from tabulate import tabulate
 import smhi_try
-import RPi.GPIO as GPIO
-import os
-GPIO.setwarnings(False)
 
 param_data = []
 stations_data = []
@@ -33,14 +30,13 @@ def city_input_loop():
     global cities
 
     while(True):
-        stadName = input("Ange staden du befinner dig i:")
+        stadName = input("Ange staden du befinner dig:")
         stadMatch = False
         lat, lon = get_city_coords(stadName)
         if lat is not None and lon is not None:
-            print("Stad hittad i databasen cities:")
-            table_data = [[stadName, lat, lon]]
-            headers = ["Stad", "Latitud", "Longitud"]
-            print(tabulate(table_data, headers=headers, tablefmt='pretty'))
+            print("Stad hittad i databasen city:", stadName)
+            print("Latitud:", lat)
+            print("Longitud:", lon)
             stadMatch = True
             return lat, lon
             
@@ -49,9 +45,8 @@ def city_input_loop():
             lat, lon = get_station_coords(stadName)
             if lat is not None and lon is not None:
                 print("Stad hittad i databasen stations:", stadName)
-                table_data = [[stadName, lat, lon]]
-                headers = ["Stad", "Latitud", "Longitud"]
-                print(tabulate(table_data, headers=headers, tablefmt='pretty'))
+                print("Latitud:", lat)
+                print("Longitud:", lon)
                 stadMatch = True
                 return lat, lon
        
@@ -86,6 +81,11 @@ def fetch_cities():
         city_lon = elememt.get('lng')
         cities.append({'toponmymName': city_name, 'id': city_id, 'lat': city_lat, 'lng': city_lon})
     
+    #table_data = [(city['toponmymName'], city['id'], city ['lat'], city ['lng']) for city in cities]
+    #headers = ['City Name', 'City ID', 'City lat', 'City lng']
+
+    #print(tabulate(table_data, headers=headers, tablefmt='pretty'))
+
     return cities
 
 def fetch_parameters():
@@ -111,6 +111,7 @@ def fetch_parameters():
             print(param['unit'])  """
             print('-' * 20) 
         
+
     else: 
         print(f'Error fetching data, error code:', {response.status_code}) 
 
@@ -137,22 +138,14 @@ def fetch_stations():
     else:
         print(f'Error fetching data, error code:', {response.status_code})  
 
-def clear_terminal():
-    # For Windows
-    if os.name == 'nt':
-        os.system('cls')
 
-    # For Mac and Linux(here, os.name is 'posix')
-    else:
-        os.system('clear')
+
 
 if __name__ == '__main__':
-
     fetch_stations()
     #fetch_parameters()
     #param_input_loop()
     fetch_cities()
-    clear_terminal()
     lat, lon = city_input_loop()
     smhi_try.main(lat, lon)
     

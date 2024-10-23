@@ -4,10 +4,14 @@ import time
 from collections import defaultdict
 from datetime import datetime, timedelta
 import RPi.GPIO as GPIO
+from tabulate import tabulate
 
-LED_PIN = 26 # Sätt rätt pin nummer här
+LED_PIN_ON = 26 # Sätt rätt pin nummer här
+LED_PIN_STBY = 19 # Sätt rätt pin nummer här
 GPIO.setmode(GPIO.BCM)
-GPIO.setup(LED_PIN, GPIO.OUT)
+GPIO.setup(LED_PIN_ON, GPIO.OUT)
+GPIO.setup(LED_PIN_STBY, GPIO.OUT)
+GPIO.setwarnings(False)
 
 
 
@@ -74,14 +78,20 @@ mock_response = {
 }
 
 going_to_r = None 
-use_mock_data = True # Byt till True för att använda mock data
+use_mock_data = False # Byt till True för att använda mock data
 
-def fetch_data():
+def fetch_data_mock():
     if use_mock_data:
         return mock_response # Använd denna för att testa
     else:
         response = requests.get(API_URL)
         return response.json()
+
+def fetch_data(lat, lon):
+    url = f"https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/{lon}/lat/{lat}/data.json"
+    response = requests.get(url)
+    data = response.json()
+    return data
 
 def filter_data(data):
 
@@ -112,8 +122,8 @@ def filter_data(data):
                     rain_days[time_series['validTime'][:10]].append(time_series['validTime'])
 
 
-    for param in checked_parameters:
-        print(f"Checked parameter: {param}")
+    #for param in checked_parameters:
+        #print(f"Checked parameter: {param}")
 
     
     if going_to_r is True:
@@ -131,38 +141,41 @@ def filter_data(data):
         for day, times in multiple_times.items():
             print(f"Det kommer att regna denna datum {day} i dessa tidspunkter:")
             for time in times:
-                print(f"T{time[11:]}")
+                table_data = [[time[11:]]]
+                headers = ["Tider"]
+                print(tabulate(table_data, headers, tablefmt="pretty"))
+                #print(f"T{time[11:]}")
                 
 
         if single_times:
             print("\nDet kommer att regna dessa dagar:")
             for time in single_times:
-                print(time)
+                table_data = [[time]]
+                headers = ["Datum"]
+                print(tabulate(table_data, headers, tablefmt="pretty"))
+                #print(time)
 
         return True
-        
+         
+         
     return False
-
 
 def control_led(is_raining):
     if is_raining:
-        GPIO.output(LED_PIN, GPIO.HIGH)
+        GPIO.output(LED_PIN_ON, GPIO.HIGH)
+        GPIO.output(LED_PIN_STBY, GPIO.LOW)
     else:
-        GPIO.output(LED_PIN, GPIO.LOW)
+        GPIO.output(LED_PIN_STBY, GPIO.HIGH)
+        GPIO.output(LED_PIN_ON, GPIO.LOW)
 
-
-def send_command(command):
+def send_command(command, lat, lon):
     
     #Här vi hämtar data från SMHI API
-    data = fetch_data()
+    data = fetch_data(lat, lon)
     current_time = datetime.now()
     one_hour_later = current_time + timedelta(hours=1)
 
     nearest_rain_time = None
-
-    print(f"Current time: {current_time}")
-    print(f"One hour later: {one_hour_later}")
-
 
     if command == 'Det kommer att regna':
         nearest_rain_time = None
@@ -178,8 +191,8 @@ def send_command(command):
                     if parameter.get('name') == 'pcat' and parameter['values'][0] in {3, 4, 6}:
                         if nearest_rain_time is None or (current_time <= forecast_time <= one_hour_later):
                             nearest_rain_time = forecast_time
-                            print(forecast_time) # Bara för att kolla om det kommer hit
-                            print("1") # Bara för att kolla om det kommer hit
+                            #print(forecast_time) # Bara för att kolla om det kommer hit
+                            #print("1") # Bara för att kolla om det kommer hit
                             pcat_match = True # Testar något nytt här
                             break         
                              
@@ -187,8 +200,8 @@ def send_command(command):
                 
                         if nearest_rain_time is None or (current_time <= forecast_time <= one_hour_later):
                             nearest_rain_time = forecast_time
-                            print(forecast_time) # Bara för att kolla om det kommer hit
-                            print("2") # Bara för att kolla om det kommer hit
+                            #print(forecast_time) # Bara för att kolla om det kommer hit
+                            #print("2") # Bara för att kolla om det kommer hit
                             wsymb2_match = True # Testar något nytt här
                             break         
             
@@ -206,16 +219,21 @@ def send_command(command):
         """
         if nearest_rain_time:
             if current_time <= nearest_rain_time <= one_hour_later:
-                print(f"Det kommer att regna om cirka 1 timme")
-                print("PWR ON")
+
+                status = "PWR ON"
+                table_data = [[current_time, one_hour_later, nearest_rain_time, status]]
+                headers = ["Nuvarande tid", "En timme efter", "Närmast regn prognos", "Status skcikad"]
+                print(tabulate(table_data, headers, tablefmt="pretty"))
+                #print(f"Det kommer att regna om cirka 1 timme")
                 control_led(True)
             
             else: 
-                print(f"Den närmaste regn prognos är {nearest_rain_time}")
-                print("STBY")  
+                status = "STBY"
+                table_data = [[current_time, one_hour_later, nearest_rain_time, status]]
+                headers = ["Nuvarande tid", "En timme efter", "Närmast regn prognos", "Status skickad"]
+                print(tabulate(table_data, headers, tablefmt="pretty"))
                 control_led(False)
 
-            #print(nearest_rain_time) bara för att kolla om det funkar eller kommer dit
         else:
             print("Ingen regn prognos hittades") 
             print("STBY")
@@ -226,22 +244,17 @@ def send_command(command):
         print("STBY")
         control_led(False)
 
-   
-          
-    
-def main():
+def main(lat, lon):
     global going_to_r # Vet inte om detta är nödvändigt
 
     try: 
         while True:
-            data = fetch_data()
+            data = fetch_data(lat, lon)
             if filter_data(data):
-                send_command('Det kommer att regna')
-                # Borde implementera funktion som schemalägger kommando beroende på när det ska regna 
-                # beroende på datan och datumet som man får tillbaka från SMHI API 
-        
+                send_command('Det kommer att regna', lat, lon)
+                
             else:
-                send_command('Det kommer inte att regna')
+                send_command('Det kommer inte att regna', lat, lon)
             time.sleep(3600)
     
     except KeyboardInterrupt:
@@ -251,61 +264,7 @@ def main():
     
     
 if __name__ == '__main__':
-    main()
+    from smhi_stationer import city_input_loop
+    lat, lon = city_input_loop()
+    main(lat, lon)
 
-
-
-
-"""
-Det kommer att regna denna datum 2024-10-13 i dessa tidspunkter:
-T05:00:00Z
-T06:00:00Z
-T07:00:00Z
-T08:00:00Z
-T09:00:00Z
-T10:00:00Z
-T11:00:00Z
-
-Det kommer att regna dessa dagar:
-2024-10-18T00:00:00Z
-
-2024-10-19T00:00:00Z
-
-2024-10-20T12:00:00Z
-
-2024-10-21T00:00:00Z
-
-
-kod som behövs kollas upp igen:
-  if command == 'Det kommer att regna':
-        #Här vi kollar om det kommer att regna inom en timme
-        for time_series in data.get('timeSeries', []):
-            for parameter in time_series.get('parameters', []):
-                if parameter.get('name') in ['Wsymb2', 'pcat']:
-                    if parameter.get('name') == 'pcat' and parameter['values'][0] in {3, 4, 6}:
-                        return forecast_time = datetime.strptime(time_series['validTime'], "%Y-%m-%dT%H:%M:%SZ")
-                       
-                    elif parameter.get('name') == 'Wsymb2' and parameter['values'][0] in {8, 9, 10, 18, 19, 20}:
-                        return forecast_time = datetime.strptime(time_series['validTime'], "%Y-%m-%dT%H:%M:%SZ")
-                        
-        
-    elif command == 'Det kommer inte att regna':
-        print("Det kommer inte att regna på de närmaste 10 dagarna")
-        print("STBY")
-        control_led(False)
-
-    if current_time <= forecast_time <= one_hour_later:
-                            print(f"Det kommer att regna om en timme")
-                            print("PWR ON")
-                            control_led(True)
-                            return
-    else: 
-        print(f"Den närmaste regn prognos är {forecast_time}")
-        print("STBY")
-        return        
-    
-
-
-
-
-"""
