@@ -1,9 +1,11 @@
 import requests
 from tabulate import tabulate
 import smhi_try
-import RPi.GPIO as GPIO
+#import RPi.GPIO as GPIO
 import os
-GPIO.setwarnings(False)
+import tkinter as tk
+from tkinter import ttk
+
 
 param_data = []
 stations_data = []

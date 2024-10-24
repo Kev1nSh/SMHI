@@ -3,16 +3,19 @@ import json
 import time
 from collections import defaultdict
 from datetime import datetime, timedelta
-import RPi.GPIO as GPIO
+#import RPi.GPIO as GPIO
 from tabulate import tabulate
+import tkinter as tk
+from tkinter import ttk
+from smhi_stationer import city_input_loop, fetch_stations, fetch_cities, clear_terminal
 
 LED_PIN_ON = 26 # Sätt rätt pin nummer här
 LED_PIN_STBY = 19 # Sätt rätt pin nummer här
-GPIO.setmode(GPIO.BCM)
+""" GPIO.setmode(GPIO.BCM)
 GPIO.setup(LED_PIN_ON, GPIO.OUT)
 GPIO.setup(LED_PIN_STBY, GPIO.OUT)
 GPIO.setwarnings(False)
-
+ """
 
 
 API_URL = "https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/18.063240/lat/59.334591/data.json"  
@@ -160,13 +163,13 @@ def filter_data(data):
          
     return False
 
-def control_led(is_raining):
+""" def control_led(is_raining):
     if is_raining:
         GPIO.output(LED_PIN_ON, GPIO.HIGH)
         GPIO.output(LED_PIN_STBY, GPIO.LOW)
     else:
         GPIO.output(LED_PIN_STBY, GPIO.HIGH)
-        GPIO.output(LED_PIN_ON, GPIO.LOW)
+        GPIO.output(LED_PIN_ON, GPIO.LOW) """
 
 def send_command(command, lat, lon):
     
@@ -225,24 +228,24 @@ def send_command(command, lat, lon):
                 headers = ["Nuvarande tid", "En timme efter", "Närmast regn prognos", "Status skcikad"]
                 print(tabulate(table_data, headers, tablefmt="pretty"))
                 #print(f"Det kommer att regna om cirka 1 timme")
-                control_led(True)
+                #control_led(True)
             
             else: 
                 status = "STBY"
                 table_data = [[current_time, one_hour_later, nearest_rain_time, status]]
                 headers = ["Nuvarande tid", "En timme efter", "Närmast regn prognos", "Status skickad"]
                 print(tabulate(table_data, headers, tablefmt="pretty"))
-                control_led(False)
+                #control_led(False)
 
         else:
             print("Ingen regn prognos hittades") 
             print("STBY")
-            control_led(False)
+            #control_led(False)
                                
     elif command == 'Det kommer inte att regna':
         print("Det kommer inte att regna på de närmaste 10 dagarna")
         print("STBY")
-        control_led(False)
+        #control_led(False)
 
 def main(lat, lon):
     global going_to_r # Vet inte om detta är nödvändigt
@@ -258,7 +261,7 @@ def main(lat, lon):
             time.sleep(3600)
     
     except KeyboardInterrupt:
-        GPIO.cleanup() # Använd denna för att stänga av GPIO
+        #GPIO.cleanup() # Använd denna för att stänga av GPIO
         print('Avslutar programmet')
         exit(0)
     
