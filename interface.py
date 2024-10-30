@@ -8,8 +8,10 @@ from smhi_stationer import get_city_coords, get_station_coords, fetch_stations, 
 
 def display_resutls(lat, lon, textwidget):
     textwidget.delete(1.0, tk.END)
-    textwidget.insert(tk.END, f"Latitude: {lat}\n")
-    textwidget.insert(tk.END, f"Longitude: {lon}\n")
+    """  
+        textwidget.insert(tk.END, f"Latitude: {lat}\n")
+        textwidget.insert(tk.END, f"Longitude: {lon}\n")
+    """
     smhi_try.main(lat, lon, textwidget)
 
 def on_submit(city_entry, text_widget):
@@ -34,7 +36,7 @@ submit_button = ttk.Button(root, text="Submit", command=lambda: on_submit(city_e
 submit_button.grid(row=1, column=0, columnspan=2, padx=10, pady=10)
 
 # Create and place the text widget for displaying the results
-text_widget = tk.Text(root, height=20, width=50)
+text_widget = tk.Text(root, height=20, width=100)
 text_widget.grid(row=2, column=0, columnspan=2, padx=10, pady=10)
 
 # Initialize the data

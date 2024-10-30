@@ -171,7 +171,7 @@ def filter_data(data):
         GPIO.output(LED_PIN_STBY, GPIO.HIGH)
         GPIO.output(LED_PIN_ON, GPIO.LOW) """
 
-def send_command(command, lat, lon):
+def send_command(command, lat, lon, text_widget = None):
     
     #Här vi hämtar data från SMHI API
     data = fetch_data(lat, lon)
@@ -226,7 +226,12 @@ def send_command(command, lat, lon):
                 status = "PWR ON"
                 table_data = [[current_time, one_hour_later, nearest_rain_time, status]]
                 headers = ["Nuvarande tid", "En timme efter", "Närmast regn prognos", "Status skcikad"]
-                print(tabulate(table_data, headers, tablefmt="pretty"))
+                table = tabulate(table_data, headers, tablefmt="pretty")
+                if text_widget:
+                    text_widget.insert(tk.END, f"Latutide: {lat}\n")
+                    text_widget.insert(tk.END, f"Longitude: {lon}\n")
+                    text_widget.insert(tk.END, table + "\n")
+                #print(tabulate(table_data, headers, tablefmt="pretty"))
                 #print(f"Det kommer att regna om cirka 1 timme")
                 #control_led(True)
             
@@ -234,37 +239,51 @@ def send_command(command, lat, lon):
                 status = "STBY"
                 table_data = [[current_time, one_hour_later, nearest_rain_time, status]]
                 headers = ["Nuvarande tid", "En timme efter", "Närmast regn prognos", "Status skickad"]
-                print(tabulate(table_data, headers, tablefmt="pretty"))
+                #print(tabulate(table_data, headers, tablefmt="pretty"))
                 #control_led(False)
-
+                table = tabulate(table_data, headers, tablefmt="pretty")
+                if text_widget:
+                    text_widget.insert(tk.END, f"Latutide: {lat}\n")
+                    text_widget.insert(tk.END, f"Longitude: {lon}\n")
+                    text_widget.insert(tk.END, table + "\n")
         else:
-            print("Ingen regn prognos hittades") 
-            print("STBY")
+            status = "STBY"
+            if text_widget:
+                text_widget.insert(tk.END, f"Latutide: {lat}\n")
+                text_widget.insert(tk.END, f"Longitude: {lon}\n")
+                text_widget.insert(tk.END, "Ingen regn prognos hittades\n")
+                text_widget.insert(tk.END, f"Status: {status}\n")
+
+            #print("Ingen regn prognos hittades") 
+            #print("STBY")
             #control_led(False)
                                
     elif command == 'Det kommer inte att regna':
-        print("Det kommer inte att regna på de närmaste 10 dagarna")
-        print("STBY")
+        if text_widget:
+            text_widget.insert(tk.END, f"Latutide: {lat}\n")
+            text_widget.insert(tk.END, f"Longitude: {lon}\n")
+            text_widget.insert(tk.END, "Det kommer inte att regna på de närmaste 10 dagarna\n")
+        #print("Det kommer inte att regna på de närmaste 10 dagarna")
+        #print("STBY")
         #control_led(False)
 
-def main(lat, lon):
+def main(lat, lon, text_widget = None):
     global going_to_r # Vet inte om detta är nödvändigt
 
-    try: 
-        while True:
-            data = fetch_data(lat, lon)
-            if filter_data(data):
-                send_command('Det kommer att regna', lat, lon)
-                
-            else:
-                send_command('Det kommer inte att regna', lat, lon)
-            time.sleep(3600)
-    
-    except KeyboardInterrupt:
+    def update():
+        data = fetch_data(lat, lon)
+        if filter_data(data):
+            send_command('Det kommer att regna', lat, lon, text_widget)
+            text_widget
+        else:
+            send_command('Det kommer inte att regna', lat, lon, text_widget)
+        text_widget.after(3600000, update) # 3600000 = 1 timme
+
+    """ except KeyboardInterrupt:
         #GPIO.cleanup() # Använd denna för att stänga av GPIO
         print('Avslutar programmet')
-        exit(0)
-    
+        exit(0) """
+    update()
     
 if __name__ == '__main__':
     from smhi_stationer import city_input_loop
