@@ -9,6 +9,7 @@ import tkinter as tk
 from tkinter import ttk
 from smhi_stationer import city_input_loop, fetch_stations, fetch_cities, clear_terminal
 
+
 LED_PIN_ON = 26 # Sätt rätt pin nummer här
 LED_PIN_STBY = 19 # Sätt rätt pin nummer här
 """ GPIO.setmode(GPIO.BCM)
@@ -186,8 +187,8 @@ def send_command(command, lat, lon, text_widget = None):
         for time_series in data.get('timeSeries', []):
             forecast_time = datetime.strptime(time_series['validTime'], "%Y-%m-%dT%H:%M:%SZ")
 
-            pcat_match = False # Testar något nytt här
-            wsymb2_match = False # Testar något nytt här
+            #pcat_match = False # Testar något nytt här
+            #wsymb2_match = False # Testar något nytt här
 
             for parameter in time_series.get('parameters', []):
                 if parameter.get('name') in ['Wsymb2', 'pcat']:
@@ -196,7 +197,7 @@ def send_command(command, lat, lon, text_widget = None):
                             nearest_rain_time = forecast_time
                             #print(forecast_time) # Bara för att kolla om det kommer hit
                             #print("1") # Bara för att kolla om det kommer hit
-                            pcat_match = True # Testar något nytt här
+                            #pcat_match = True # Testar något nytt här
                             break         
                              
                     elif parameter.get('name') == 'Wsymb2' and parameter['values'][0] in {8, 9, 10, 18, 19, 20}:
@@ -205,7 +206,7 @@ def send_command(command, lat, lon, text_widget = None):
                             nearest_rain_time = forecast_time
                             #print(forecast_time) # Bara för att kolla om det kommer hit
                             #print("2") # Bara för att kolla om det kommer hit
-                            wsymb2_match = True # Testar något nytt här
+                            #wsymb2_match = True # Testar något nytt här
                             break         
             
 
@@ -224,21 +225,23 @@ def send_command(command, lat, lon, text_widget = None):
             if current_time <= nearest_rain_time <= one_hour_later:
 
                 status = "PWR ON"
-                table_data = [[current_time, one_hour_later, nearest_rain_time, status]]
-                headers = ["Nuvarande tid", "En timme efter", "Närmast regn prognos", "Status skcikad"]
+                table_data = [[current_time, nearest_rain_time, status]]
+                headers = ["Nuvarande tid","Närmast regn prognos", "Status skcikad"]
                 table = tabulate(table_data, headers, tablefmt="pretty")
                 if text_widget:
                     text_widget.insert(tk.END, f"Latutide: {lat}\n")
                     text_widget.insert(tk.END, f"Longitude: {lon}\n")
                     text_widget.insert(tk.END, table + "\n")
+                
+                    
                 #print(tabulate(table_data, headers, tablefmt="pretty"))
                 #print(f"Det kommer att regna om cirka 1 timme")
                 #control_led(True)
             
             else: 
                 status = "STBY"
-                table_data = [[current_time, one_hour_later, nearest_rain_time, status]]
-                headers = ["Nuvarande tid", "En timme efter", "Närmast regn prognos", "Status skickad"]
+                table_data = [[current_time, nearest_rain_time, status]]
+                headers = ["Nuvarande tid", "Närmast regn prognos", "Status skickad"]
                 #print(tabulate(table_data, headers, tablefmt="pretty"))
                 #control_led(False)
                 table = tabulate(table_data, headers, tablefmt="pretty")
@@ -246,6 +249,7 @@ def send_command(command, lat, lon, text_widget = None):
                     text_widget.insert(tk.END, f"Latutide: {lat}\n")
                     text_widget.insert(tk.END, f"Longitude: {lon}\n")
                     text_widget.insert(tk.END, table + "\n")
+                    
         else:
             status = "STBY"
             if text_widget:
