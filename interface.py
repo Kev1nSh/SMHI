@@ -56,9 +56,6 @@ def resize_window():
     y = (screen_height - new_height) // 2
     root.geometry(f"{new_width}x{new_height}+{x}+{y}")
     
-
-    print (f"Windows size: {root.winfo_reqwidth()}x{root.winfo_reqheight()}")
-
 # Create the main window
 root = tk.Tk()
 root.title("SMHI App")
