@@ -106,11 +106,6 @@ def fetch_parameters():
             print(param['key'])
             print(param['title'])
             print(param['summary'])
-            """ 
-            print(param['updated'])
-            print(param['title'])
-            print(param['summary'])
-            print(param['unit'])  """
             print('-' * 20) 
         
     else: 
@@ -127,15 +122,6 @@ def fetch_stations():
         
         data = response.json()
         stations_data = data.get('station', [])  
-
-        """ for station in stations_data:
-            print(station['name'])
-            print(station['id'])
-            print(station['latitude'])
-            print(station['longitude'])
-            print(station['height'])
-            print(station['active'])
-            print('-' * 20) """
     else:
         print(f'Error fetching data, error code:', {response.status_code})  
 
@@ -158,10 +144,3 @@ if __name__ == '__main__':
     lat, lon = city_input_loop()
     smhi_try.main(lat, lon)
     
-
-'''
- 13 Rådande väder
- 17 Nederbörd 2 gånger per dygn, 06 och 18
- 27 Lufttemperatur 2 gånger per dygn, 06 och 18
-
-'''

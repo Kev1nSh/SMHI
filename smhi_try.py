@@ -7,6 +7,8 @@ from datetime import datetime, timedelta
 from tabulate import tabulate
 import tkinter as tk
 from tkinter import ttk
+from customtkinter import *
+import customtkinter as ctk
 from smhi_stationer import city_input_loop, fetch_stations, fetch_cities, clear_terminal
 
 
@@ -186,87 +188,65 @@ def send_command(command, lat, lon, text_widget = None):
         #Här vi kollar om det kommer att regna inom en timme
         for time_series in data.get('timeSeries', []):
             forecast_time = datetime.strptime(time_series['validTime'], "%Y-%m-%dT%H:%M:%SZ")
-
-            #pcat_match = False # Testar något nytt här
-            #wsymb2_match = False # Testar något nytt här
+            
+            if forecast_time <= current_time:
+                continue
 
             for parameter in time_series.get('parameters', []):
                 if parameter.get('name') in ['Wsymb2', 'pcat']:
                     if parameter.get('name') == 'pcat' and parameter['values'][0] in {3, 4, 6}:
-                        if nearest_rain_time is None or (current_time <= forecast_time <= one_hour_later):
-                            nearest_rain_time = forecast_time
-                            #print(forecast_time) # Bara för att kolla om det kommer hit
-                            #print("1") # Bara för att kolla om det kommer hit
-                            #pcat_match = True # Testar något nytt här
+                        if nearest_rain_time is None or forecast_time < nearest_rain_time:
+                            nearest_rain_time = forecast_time                
                             break         
-                             
                     elif parameter.get('name') == 'Wsymb2' and parameter['values'][0] in {8, 9, 10, 18, 19, 20}:
-                
-                        if nearest_rain_time is None or (current_time <= forecast_time <= one_hour_later):
+                        if nearest_rain_time is None or forecast_time < nearest_rain_time:
                             nearest_rain_time = forecast_time
-                            #print(forecast_time) # Bara för att kolla om det kommer hit
-                            #print("2") # Bara för att kolla om det kommer hit
-                            #wsymb2_match = True # Testar något nytt här
                             break         
             
-
-            # Testar något nytt här, mest för att vara säker att vi får så accurate data som möjligt
-            # Så att man inte skickar felaktiga kommandon till enheten bara för ena parametern matchar 
-            # Behöver återkomma till detta senare
-        """
-            if pcat_match or wsymb2_match:                   
-                if nearest_rain_time is None or (current_time <= forecast_time <= one_hour_later):
-                    nearest_rain_time = forecast_time
-                    print(forecast_time) # Bara för att kolla om det kommer hit
-                    print("1") # Bara för att kolla om det kommer hit
-                    break                
-        """
-        if nearest_rain_time:
-            if current_time <= nearest_rain_time <= one_hour_later:
-
-                status = "PWR ON"
-                table_data = [[current_time, nearest_rain_time, status]]
-                headers = ["Nuvarande tid","Närmast regn prognos", "Status skcikad"]
-                table = tabulate(table_data, headers, tablefmt="pretty")
-                if text_widget:
-                    text_widget.insert(tk.END, f"Latutide: {lat}\n")
-                    text_widget.insert(tk.END, f"Longitude: {lon}\n")
-                    text_widget.insert(tk.END, table + "\n")
+        if nearest_rain_time and current_time <= nearest_rain_time <= one_hour_later:
+            status = "PWR ON"
+            table_data = [[current_time, nearest_rain_time, status]]
+            headers = ["Nuvarande tid","Närmast regn prognos", "Status skcikad"]
+            table = tabulate(table_data, headers, tablefmt="pretty")
+            if text_widget:
+                text_widget.insert(ctk.END, f"Latutide: {lat}\n")
+                text_widget.insert(ctk.END, f"Longitude: {lon}\n")
+                text_widget.insert(ctk.END, table)
                 
                     
                 #print(tabulate(table_data, headers, tablefmt="pretty"))
                 #print(f"Det kommer att regna om cirka 1 timme")
                 #control_led(True)
             
-            else: 
-                status = "STBY"
-                table_data = [[current_time, nearest_rain_time, status]]
-                headers = ["Nuvarande tid", "Närmast regn prognos", "Status skickad"]
-                #print(tabulate(table_data, headers, tablefmt="pretty"))
-                #control_led(False)
-                table = tabulate(table_data, headers, tablefmt="pretty")
-                if text_widget:
-                    text_widget.insert(tk.END, f"Latutide: {lat}\n")
-                    text_widget.insert(tk.END, f"Longitude: {lon}\n")
-                    text_widget.insert(tk.END, table + "\n")
-                    
-        else:
+        else: 
             status = "STBY"
+            table_data = [[current_time, nearest_rain_time, status]]
+            headers = ["Nuvarande tid", "Närmast regn prognos", "Status skickad"]
+            #print(tabulate(table_data, headers, tablefmt="pretty"))
+            #control_led(False)
+            table = tabulate(table_data, headers, tablefmt="pretty")
             if text_widget:
-                text_widget.insert(tk.END, f"Latutide: {lat}\n")
-                text_widget.insert(tk.END, f"Longitude: {lon}\n")
-                text_widget.insert(tk.END, "Ingen regn prognos hittades\n")
-                text_widget.insert(tk.END, f"Status: {status}\n")
+                text_widget.insert(ctk.END, f"Latutide: {lat}\n")
+                text_widget.insert(ctk.END, f"Longitude: {lon}\n")
+                text_widget.insert(ctk.END, table)
+                    
+    else:
+        status = "STBY"
+        if text_widget:
+            text_widget.insert(ctk.END, f"Latutide: {lat}\n")
+            text_widget.insert(ctk.END, f"Longitude: {lon}\n")
+            text_widget.insert(ctk.END, "Ingen regn prognos hittades\n")
+            text_widget.insert(ctk.END, f"Status: {status}\n")
 
             #print("Ingen regn prognos hittades") 
             #print("STBY")
             #control_led(False)
                                
-    elif command == 'Det kommer inte att regna':
+    if command == 'Det kommer inte att regna':
         if text_widget:
-            text_widget.insert(tk.END, f"Latutide: {lat}\n")
-            text_widget.insert(tk.END, f"Longitude: {lon}\n")
-            text_widget.insert(tk.END, "Det kommer inte att regna på de närmaste 10 dagarna\n")
+            text_widget.insert(ctk.END, f"Latutide: {lat}\n")
+            text_widget.insert(ctk.END, f"Longitude: {lon}\n")
+            text_widget.insert(ctk.END, "Det kommer inte att regna på de närmaste 10 dagarna\n")
         #print("Det kommer inte att regna på de närmaste 10 dagarna")
         #print("STBY")
         #control_led(False)
@@ -278,10 +258,12 @@ def main(lat, lon, text_widget = None):
         data = fetch_data(lat, lon)
         if filter_data(data):
             send_command('Det kommer att regna', lat, lon, text_widget)
-            text_widget
+            
         else:
             send_command('Det kommer inte att regna', lat, lon, text_widget)
-        text_widget.after(3600000, update) # 3600000 = 1 timme
+        
+        if text_widget:
+            text_widget.after(3600000, update) # 3600000 = 1 timme
 
     """ except KeyboardInterrupt:
         #GPIO.cleanup() # Använd denna för att stänga av GPIO
